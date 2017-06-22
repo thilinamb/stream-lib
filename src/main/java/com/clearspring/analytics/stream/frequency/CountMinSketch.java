@@ -14,18 +14,12 @@
 
 package com.clearspring.analytics.stream.frequency;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.Serializable;
-
-import java.util.Arrays;
-import java.util.Random;
-
 import com.clearspring.analytics.stream.membership.Filter;
 import com.clearspring.analytics.util.Preconditions;
+
+import java.io.*;
+import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Count-Min Sketch datastructure.
@@ -44,6 +38,7 @@ public class CountMinSketch implements IFrequency, Serializable {
     long size;
     double eps;
     double confidence;
+    int nonZeroCounters = 0;
 
     CountMinSketch() {
     }
@@ -199,7 +194,11 @@ public class CountMinSketch implements IFrequency, Serializable {
             throw new IllegalArgumentException("Negative increments not implemented");
         }
         for (int i = 0; i < depth; ++i) {
-            table[i][hash(item, i)] += count;
+            int column = hash(item, i);
+            if(table[i][column] == 0){
+                nonZeroCounters++;
+            }
+            table[i][column] += count;
         }
 
         checkSizeAfterAdd(String.valueOf(item), count);
@@ -216,6 +215,9 @@ public class CountMinSketch implements IFrequency, Serializable {
         }
         int[] buckets = Filter.getHashBuckets(item, depth, width);
         for (int i = 0; i < depth; ++i) {
+            if(table[i][buckets[i]] == 0){
+                nonZeroCounters++;
+            }
             table[i][buckets[i]] += count;
         }
 
@@ -346,5 +348,9 @@ public class CountMinSketch implements IFrequency, Serializable {
         public CMSMergeException(String message) {
             super(message);
         }
+    }
+
+    public int getZeroElementCount(){
+        return nonZeroCounters;
     }
 }
