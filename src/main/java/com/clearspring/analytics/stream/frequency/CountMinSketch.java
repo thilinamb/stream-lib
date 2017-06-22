@@ -350,7 +350,7 @@ public class CountMinSketch implements IFrequency, Serializable {
         }
     }
 
-    public int getZeroElementCount(){
+    public int getNonZeroElementCount(){
         return nonZeroCounters;
     }
 }
