@@ -2,6 +2,7 @@ package com.clearspring.analytics.stream.frequency.compress;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 
 /**
  * @author Thilina Buddhika
@@ -37,14 +38,6 @@ public class CompressedSparseRowCompressor implements Compressor {
             }
             this.arrIA[i + 1] = this.arrIA[i] + nonZeroElemsPerRow;
         }
-        /*printArr(data);
-        System.out.println("A");;
-        printLongArr(arrA);
-        System.out.println("IA");
-        printIntArr(arrIA);
-        System.out.println("JA");
-        printIntArr(arrJA);
-        */
     }
 
     @Override
@@ -62,12 +55,35 @@ public class CompressedSparseRowCompressor implements Compressor {
     }
 
     @Override
-    public void serialize(DataOutputStream dos) {
-
+    public void serialize(DataOutputStream dos) throws IOException {
+        dos.writeInt(this.arrA.length);
+        for (long i : this.arrA) {
+            dos.writeLong(i);
+        }
+        dos.writeInt(this.arrIA.length);
+        for (int i : this.arrIA) {
+            dos.writeInt(i);
+        }
+        for (int i : this.arrJA) {
+            dos.writeInt(i);
+        }
     }
 
     @Override
-    public void deserialize(DataInputStream dis) {
-
+    public void deserialize(DataInputStream dis) throws IOException {
+        int nonZeroElemCount = dis.readInt();
+        this.arrA = new long[nonZeroElemCount];
+        for (int i = 0; i < nonZeroElemCount; i++) {
+            this.arrA[i] = dis.readLong();
+        }
+        this.arrIA = new int[dis.readInt()];
+        for(int i = 0; i < this.arrIA.length; i++){
+            this.arrIA[i] = dis.readInt();
+        }
+        this.arrJA = new int[nonZeroElemCount];
+        for(int i = 0; i < nonZeroElemCount; i++){
+            this.arrJA[i] = dis.readInt();
+        }
     }
+
 }
