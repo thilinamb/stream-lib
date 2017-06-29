@@ -17,4 +17,6 @@ public interface Compressor {
     public void deserialize(DataInputStream dis) throws IOException;
 
     public int getType();
+
+    public int getSize();
 }

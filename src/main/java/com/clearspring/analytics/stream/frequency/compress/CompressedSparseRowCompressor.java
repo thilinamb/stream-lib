@@ -92,4 +92,8 @@ public class CompressedSparseRowCompressor implements Compressor {
         return COMPRESS_TYPE_CSRC;
     }
 
+    @Override
+    public int getSize() {
+        return arrA.length * 8 + arrJA.length + 4 + arrIA.length + 4;
+    }
 }

@@ -118,4 +118,9 @@ public class BinaryCompressor implements Compressor {
     public int getType() {
         return COMPRESS_TYPE_BINARY;
     }
+
+    @Override
+    public int getSize() {
+        return compressedData.length;
+    }
 }
