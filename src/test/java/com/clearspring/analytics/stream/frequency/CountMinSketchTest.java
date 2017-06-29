@@ -17,6 +17,7 @@ package com.clearspring.analytics.stream.frequency;
 import com.clearspring.analytics.TestUtils;
 import com.clearspring.analytics.stream.frequency.CountMinSketch.CMSMergeException;
 import com.clearspring.analytics.stream.frequency.compress.BinaryCompressor;
+import com.clearspring.analytics.stream.frequency.compress.CompressedSparseRowCompressor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 
@@ -314,6 +315,10 @@ public class CountMinSketchTest {
 
         sketch1.compress(BinaryCompressor.COMPRESS_TYPE_BINARY);
         sketch1.decompress();
+        assertEquals(sketch1, sketch2);
+
+        sketch2.compress(CompressedSparseRowCompressor.COMPRESS_TYPE_CSRC);
+        sketch2.decompress();
         assertEquals(sketch1, sketch2);
     }
 }
