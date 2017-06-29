@@ -14,18 +14,17 @@
 
 package com.clearspring.analytics.stream.frequency;
 
+import com.clearspring.analytics.TestUtils;
+import com.clearspring.analytics.stream.frequency.CountMinSketch.CMSMergeException;
+import com.clearspring.analytics.stream.frequency.compress.BinaryCompressor;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeSet;
-
-import com.clearspring.analytics.stream.frequency.CountMinSketch.CMSMergeException;
-import com.clearspring.analytics.TestUtils;
-
-import org.apache.commons.lang3.RandomStringUtils;
-
-import org.junit.Test;
 
 import static org.junit.Assert.*;
 
@@ -297,5 +296,24 @@ public class CountMinSketchTest {
                 ", width=" + 20000 +
                 ", size=" + 145 +
                 '}', sketch.toString());
+    }
+
+    @Test
+    public void testCompressAndDecompress(){
+        double eps1 = 0.0001;
+        double confidence = 0.99;
+        int seed = 1;
+        final CountMinSketch sketch1 = new CountMinSketch(eps1, confidence, seed);
+        final CountMinSketch sketch2 = new CountMinSketch(eps1, confidence, seed);
+
+        sketch1.add("test", 1);
+        sketch1.add("test2", 2);
+
+        sketch2.add("test", 1);
+        sketch2.add("test2", 2);
+
+        sketch1.compress(BinaryCompressor.COMPRESS_TYPE_BINARY);
+        sketch1.decompress();
+        assertEquals(sketch1, sketch2);
     }
 }

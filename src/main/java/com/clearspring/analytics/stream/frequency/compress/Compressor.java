@@ -15,4 +15,6 @@ public interface Compressor {
     public void serialize(DataOutputStream dos) throws IOException;
 
     public void deserialize(DataInputStream dis) throws IOException;
+
+    public int getType();
 }

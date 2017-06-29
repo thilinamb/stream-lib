@@ -14,11 +14,16 @@
 
 package com.clearspring.analytics.stream.frequency;
 
+import com.clearspring.analytics.stream.frequency.compress.BinaryCompressor;
+import com.clearspring.analytics.stream.frequency.compress.CompressedSparseRowCompressor;
+import com.clearspring.analytics.stream.frequency.compress.Compressor;
 import com.clearspring.analytics.stream.membership.Filter;
 import com.clearspring.analytics.util.Preconditions;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -28,8 +33,15 @@ import java.util.Random;
  */
 public class CountMinSketch implements IFrequency, Serializable {
 
+    private static Map<Integer, Compressor> compressors;
     public static final long PRIME_MODULUS = (1L << 31) - 1;
     private static final long serialVersionUID = -5084982213094657923L;
+
+    static {
+        compressors = new HashMap<>();
+        compressors.put(BinaryCompressor.COMPRESS_TYPE_BINARY, new BinaryCompressor());
+        compressors.put(CompressedSparseRowCompressor.COMPRESS_TYPE_CSRC, new CompressedSparseRowCompressor());
+    }
 
     int depth;
     int width;
@@ -39,6 +51,7 @@ public class CountMinSketch implements IFrequency, Serializable {
     double eps;
     double confidence;
     int nonZeroCounters = 0;
+    Compressor compressor;
 
     CountMinSketch() {
     }
@@ -195,7 +208,7 @@ public class CountMinSketch implements IFrequency, Serializable {
         }
         for (int i = 0; i < depth; ++i) {
             int column = hash(item, i);
-            if(table[i][column] == 0){
+            if (table[i][column] == 0) {
                 nonZeroCounters++;
             }
             table[i][column] += count;
@@ -215,7 +228,7 @@ public class CountMinSketch implements IFrequency, Serializable {
         }
         int[] buckets = Filter.getHashBuckets(item, depth, width);
         for (int i = 0; i < depth; ++i) {
-            if(table[i][buckets[i]] == 0){
+            if (table[i][buckets[i]] == 0) {
                 nonZeroCounters++;
             }
             table[i][buckets[i]] += count;
@@ -306,9 +319,17 @@ public class CountMinSketch implements IFrequency, Serializable {
             s.writeInt(sketch.width);
             for (int i = 0; i < sketch.depth; ++i) {
                 s.writeLong(sketch.hashA[i]);
-                for (int j = 0; j < sketch.width; ++j) {
-                    s.writeLong(sketch.table[i][j]);
+            }
+            s.writeBoolean(sketch.compressor != null);
+            if (sketch.compressor == null) {
+                for (int i = 0; i < sketch.depth; i++) {
+                    for (int j = 0; j < sketch.width; ++j) {
+                        s.writeLong(sketch.table[i][j]);
+                    }
                 }
+            } else {
+                s.writeInt(sketch.compressor.getType());
+                sketch.compressor.serialize(s);
             }
             return bos.toByteArray();
         } catch (IOException e) {
@@ -331,8 +352,17 @@ public class CountMinSketch implements IFrequency, Serializable {
             sketch.table = new long[sketch.depth][sketch.width];
             for (int i = 0; i < sketch.depth; ++i) {
                 sketch.hashA[i] = s.readLong();
-                for (int j = 0; j < sketch.width; ++j) {
-                    sketch.table[i][j] = s.readLong();
+            }
+            boolean compressed = s.readBoolean();
+            if (compressed) {
+                int type = s.readInt();
+                sketch.compressor = compressors.get(type);
+                sketch.compressor.deserialize(s);
+            } else {
+                for (int i = 0; i < sketch.depth; ++i) {
+                    for (int j = 0; j < sketch.width; ++j) {
+                        sketch.table[i][j] = s.readLong();
+                    }
                 }
             }
             return sketch;
@@ -350,7 +380,25 @@ public class CountMinSketch implements IFrequency, Serializable {
         }
     }
 
-    public int getNonZeroElementCount(){
+    public int getNonZeroElementCount() {
         return nonZeroCounters;
+    }
+
+    public void compress(int type) {
+        Compressor compressor = compressors.get(type);
+        if (compressor == null) {
+            throw new RuntimeException("No such compressor type. Type: " + type);
+        }
+        this.compressor = compressor;
+        compressor.deflate(table, nonZeroCounters);
+        this.table = null;
+    }
+
+    public void decompress() {
+        if (compressor == null) {
+            throw new RuntimeException("Compressor is not set. Cannot uncompress");
+        }
+        this.table = compressor.inflate(depth, width);
+        compressor = null;
     }
 }

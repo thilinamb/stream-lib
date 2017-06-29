@@ -10,6 +10,7 @@ import java.util.zip.GZIPOutputStream;
  */
 public class BinaryCompressor implements Compressor {
 
+    public static final int COMPRESS_TYPE_BINARY = 1;
     private int unCompressedSize;
     private byte[] compressedData;
 
@@ -111,5 +112,10 @@ public class BinaryCompressor implements Compressor {
         this.unCompressedSize = dis.readInt();
         this.compressedData = new byte[dis.readInt()];
         dis.readFully(this.compressedData);
+    }
+
+    @Override
+    public int getType() {
+        return COMPRESS_TYPE_BINARY;
     }
 }

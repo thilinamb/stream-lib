@@ -9,6 +9,7 @@ import java.io.IOException;
  */
 public class CompressedSparseRowCompressor implements Compressor {
 
+    public static final int COMPRESS_TYPE_CSRC = 2;
     private long[] arrA;
     private int[] arrIA;
     private int[] arrJA;
@@ -84,6 +85,11 @@ public class CompressedSparseRowCompressor implements Compressor {
         for(int i = 0; i < nonZeroElemCount; i++){
             this.arrJA[i] = dis.readInt();
         }
+    }
+
+    @Override
+    public int getType() {
+        return COMPRESS_TYPE_CSRC;
     }
 
 }
